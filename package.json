@@ -1,0 +1,17 @@
+{
+  "name": "yugioh-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "yugioh-api.js",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.2",
+    "fake-useragent": "^1.0.1",
+    "sync-request": "^6.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "node test.js"
+  },
+  "author": "Zeeraa",
+  "license": "ISC"
+}
