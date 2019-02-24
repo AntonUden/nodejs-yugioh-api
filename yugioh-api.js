@@ -32,7 +32,9 @@ exports.getCardPrice = function(printTag) {
 
 			let allowedConditions = ['Mint', 'Near Mint', 'Excellent'];
 			let allowedLanguage = ['English'];
-
+			
+			let httpError = false;
+			
 			for (let i = 0; i < URLs.length; i++) {
 				response = request('GET', URLs[i], {
 					headers: {
@@ -74,14 +76,19 @@ exports.getCardPrice = function(printTag) {
 						result.error = false;
 						result.cardmarket = new Object();
 						result.cardmarket.found = true;
-						result.cardmarket.found_prices = prices.length;
 						result.cardmarket.prices = prices;
 						result.cardmarket.lowest_price = lowestPrice;
-
-						break;
+						
+						return result;
 					}
+				} else {
+					httpError = true;
 				}
 			}
+			result.success = false;
+			result.error = httpError;
+			result.message = 'Failed';
+			return result;
 		} else {
 			result.success = false;
 			result.error = true;
