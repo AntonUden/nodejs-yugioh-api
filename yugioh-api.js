@@ -33,6 +33,8 @@ exports.getCardPrice = function(printTag) {
 
 			let httpError = false;
 
+			let allowedConditions = ['Mint', 'Near Mint', 'Excellent'];
+
 			for (let i = 0; i < URLs.length; i++) {
 				response = request('GET', URLs[i], {
 					headers: {
@@ -44,7 +46,7 @@ exports.getCardPrice = function(printTag) {
 					$ = cheerio.load(response.getBody('utf8'));
 
 					if($('#tabContent-info').find('.icon').first().attr('onmouseover').toUpperCase().includes(cardInfo.data.price_data.rarity.toUpperCase())) {
-						
+						let articles = $('.article-table').find('.article-row');
 						
 						break;
 					}
@@ -52,8 +54,6 @@ exports.getCardPrice = function(printTag) {
 					httpError = true;
 				}
 			}
-
-			console.log(URLs);
 		} else {
 			result.success = false;
 			result.error = true;
