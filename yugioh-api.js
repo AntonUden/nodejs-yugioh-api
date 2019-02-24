@@ -34,6 +34,7 @@ exports.getCardPrice = function(printTag) {
 			let httpError = false;
 
 			let allowedConditions = ['Mint', 'Near Mint', 'Excellent'];
+			let allowedLanguage = ['English'];
 
 			for (let i = 0; i < URLs.length; i++) {
 				response = request('GET', URLs[i], {
@@ -47,7 +48,21 @@ exports.getCardPrice = function(printTag) {
 
 					if($('#tabContent-info').find('.icon').first().attr('onmouseover').toUpperCase().includes(cardInfo.data.price_data.rarity.toUpperCase())) {
 						let articles = $('.article-table').find('.article-row');
-						
+						let prices = [];
+
+						for(let j = 0; j < articles.length; j++) {
+							let condition = $(articles[j]).find('.product-attributes').first().find('a[href*="CardCondition"]').first().find('span').first().data('original-title');
+							if(allowedConditions.includes(condition)) {
+								let language = $(articles[j]).find('.product-attributes').first().find('span.icon.mr-2').first().data('original-title');
+								if(allowedLanguage.includes(language)) {
+									let price = parseFloat($(articles[j]).find('.mobile-offer-container').first().find('div').first().find('span').first().text().replace(/,/g, '.'));
+									prices.push(price);
+								}
+							}
+						}
+
+						console.log(prices);
+
 						break;
 					}
 				} else {
