@@ -7,12 +7,19 @@ exports.getCardPrice = function(printTag) {
 	printTag = printTag.toUpperCase();
 	let result = new Object();
 
+	console.log('Checking price for ' + printTag);
+
 	let cardInfo = this.getCardInfo(printTag);
 
 	if(cardInfo.success) {
+		console.log('Card info found!');
 		result.data = new Object();
 		result.data.card = cardInfo.data;
-		response = request('GET', 'https://www.cardmarket.com/en/YuGiOh/Cards/' + querystring.escape(cardInfo.data.name.replace(/\s+/g, '-')) + '/Versions', {
+
+		let url = 'https://www.cardmarket.com/en/YuGiOh/Cards/' + querystring.escape(cardInfo.data.name.replace(/\s+/g, '-').replace(/:+/g, ''));
+
+		console.log(url);
+		response = request('GET', url + '/Versions', {
 			headers: {
 				'user-agent': fakeUa()
 			},
@@ -24,12 +31,15 @@ exports.getCardPrice = function(printTag) {
 
 			for(let i = 0; i < versions.length; i++) {
 				let url = 'https://www.cardmarket.com' + $(versions[i]).find('a').first().attr('href');
+				console.log('Found ' + url);
 				let expansion = $(versions[i]).find('.yugiohExpansionIcon').text();
 				
 				if(printTag.startsWith(expansion.toUpperCase())) {
 					URLs.push(url);
 				}
 			}
+
+			console.log(URLs);
 
 			let allowedConditions = ['Mint', 'Near Mint', 'Excellent'];
 			let allowedLanguage = ['English'];
@@ -46,7 +56,7 @@ exports.getCardPrice = function(printTag) {
 				if(response.statusCode == 200) {
 					$ = cheerio.load(response.getBody('utf8'));
 
-					if($('#tabContent-info').find('.icon').first().attr('onmouseover').toUpperCase().includes(cardInfo.data.price_data.rarity.toUpperCase())) {
+					if($('#tabContent-info').find('.icon').first().attr('onmouseover').toUpperCase().includes(cardInfo.data.price_data.rarity.replace(' Rare', '').toUpperCase())) {
 						let articles = $('.article-table').find('.article-row');
 						let prices = [];
 
@@ -56,6 +66,7 @@ exports.getCardPrice = function(printTag) {
 								let language = $(articles[j]).find('.product-attributes').first().find('span.icon.mr-2').first().data('original-title');
 								if(allowedLanguage.includes(language)) {
 									let price = parseFloat($(articles[j]).find('.mobile-offer-container').first().find('div').first().find('span').first().text().replace(/,/g, '.'));
+									console.log('Found price ' + price + ' €');
 									prices.push(price);
 								}
 							}
@@ -72,6 +83,8 @@ exports.getCardPrice = function(printTag) {
 								lowestPrice = prices[j];
 							}
 						}
+
+						console.log('Lowest price ' + lowestPrice);
 						
 						result.success = true;
 						result.error = false;
@@ -86,16 +99,19 @@ exports.getCardPrice = function(printTag) {
 					httpError = true;
 				}
 			}
+			console.log('0 Results found');
 			result.success = false;
 			result.error = httpError;
-			result.message = 'Failed';
+			result.message = '0 Results found'+ (httpError ? ' . HTTP error occurred' : '');
 			return result;
 		} else {
+			console.log('Failed to find cardmarket Versions');
 			result.success = false;
 			result.error = true;
 			result.message = 'cardmarket.com statusCode: ' + response.statusCode;
 		}
 	} else {
+		console.log('Failed to get card info');
 		if(cardInfo.error) {
 			result.success = false;
 			result.error = true;
@@ -112,6 +128,7 @@ exports.getCardPrice = function(printTag) {
 
 exports.getCardInfo = function(printTag) {
 	printTag = printTag.toUpperCase();
+	console.log('Checking card info for ' + printTag);
 	let result = new Object();
 
 	let response = request('GET', 'https://yugiohprices.com/api/price_for_print_tag/' + printTag, {
@@ -128,12 +145,14 @@ exports.getCardInfo = function(printTag) {
 			result.message = '';
 			result.data = data.data;
 		} else {
+			console.log('Card not found');
 			result.success = false;
 			result.error = false;
 			result.yugiohprices_status = data.status;
 			result.message = data.message;
 		}
 	} else {
+		console.log('HTTP Error ' + response.statusCode);
 		result.success = false;
 		result.error = true;
 		result.message = 'yugiohprices.com statusCode: ' + response.statusCode;
