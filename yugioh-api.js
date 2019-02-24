@@ -11,7 +11,6 @@ exports.getCardPrice = function(printTag) {
 
 	if(cardInfo.success) {
 		result.card = cardInfo.data;
-		result.found_yugiohprices = true;
 		response = request('GET', 'https://www.cardmarket.com/en/YuGiOh/Cards/' + querystring.escape(cardInfo.data.name.replace(/\s+/g, '-')) + '/Versions', {
 			headers: {
 				'user-agent': fakeUa()
@@ -30,8 +29,6 @@ exports.getCardPrice = function(printTag) {
 					URLs.push(url);
 				}
 			}
-
-			let httpError = false;
 
 			let allowedConditions = ['Mint', 'Near Mint', 'Excellent'];
 			let allowedLanguage = ['English'];
@@ -60,36 +57,44 @@ exports.getCardPrice = function(printTag) {
 								}
 							}
 						}
-
-						console.log(prices);
+						
+						let lowestPrice = undefined;
+						for(let j = 0; j < prices.length; j++) {
+							if(lowestPrice == undefined) {
+								lowestPrice = prices[j];
+								continue;
+							}
+							
+							if(prices[j] < lowestPrice) {
+								lowestPrice = prices[j];
+							}
+						}
+						
+						result.success = true;
+						result.error = false;
+						result.cardmarket = new Object();
+						result.cardmarket.found = true;
+						result.cardmarket.found_prices = prices.length;
+						result.cardmarket.prices = prices;
+						result.cardmarket.lowest_price = lowestPrice;
 
 						break;
 					}
-				} else {
-					httpError = true;
 				}
 			}
 		} else {
 			result.success = false;
 			result.error = true;
-			result.error_yugiohprices = false;
-			result.error_cardmarket = true;
-			result.found_yugiohprices = true;
-			result.found_cardmarket = false;
 			result.message = 'cardmarket.com statusCode: ' + response.statusCode;
 		}
 	} else {
 		if(cardInfo.error) {
 			result.success = false;
 			result.error = true;
-			result.error_yugiohprices = true;
-			result.found_yugiohprices = false;
 			result.message = cardInfo.message;
 		} else {
 			result.success = false;
 			result.error = false;
-			result.error_yugiohprices = false;
-			result.found_yugiohprices = false;
 			result.message = cardInfo.message;
 		}
 	}
@@ -103,7 +108,7 @@ exports.getCardInfo = function(printTag) {
 
 	let response = request('GET', 'https://yugiohprices.com/api/price_for_print_tag/' + printTag, {
 		headers: {
-			'user-agent': fakeUa()
+			//'user-agent': fakeUa()
 		},
 	});
 	
@@ -140,7 +145,7 @@ exports.getStatus = function(printTag) {
 	// Random card from yugiohprices.com
 	response = request('GET', 'https://yugiohprices.com/api/price_for_print_tag/LCGX-EN016', {
 		headers: {
-			'user-agent': fakeUa()
+			//'user-agent': fakeUa()
 		},
 	});
 	
