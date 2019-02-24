@@ -10,7 +10,8 @@ exports.getCardPrice = function(printTag) {
 	let cardInfo = this.getCardInfo(printTag);
 
 	if(cardInfo.success) {
-		result.card = cardInfo.data;
+		result.data = new Object();
+		result.data.card = cardInfo.data;
 		response = request('GET', 'https://www.cardmarket.com/en/YuGiOh/Cards/' + querystring.escape(cardInfo.data.name.replace(/\s+/g, '-')) + '/Versions', {
 			headers: {
 				'user-agent': fakeUa()
@@ -74,10 +75,10 @@ exports.getCardPrice = function(printTag) {
 						
 						result.success = true;
 						result.error = false;
-						result.cardmarket = new Object();
-						result.cardmarket.found = true;
-						result.cardmarket.prices = prices;
-						result.cardmarket.lowest_price = lowestPrice;
+						result.data.cardmarket = new Object();
+						result.data.cardmarket.found = true;
+						result.data.cardmarket.prices = prices;
+						result.data.cardmarket.lowest_price = lowestPrice;
 						
 						return result;
 					}
