@@ -3,9 +3,15 @@ var cheerio = require('cheerio');
 var fakeUa = require('fake-useragent');
 var querystring = require('querystring');
 
+String.prototype.replaceAll = function(search, replacement) {
+    var target = this;
+    return target.replace(new RegExp(search, 'g'), replacement);
+};
+
 exports.getCardPrice = function(printTag) {
 	printTag = printTag.toUpperCase();
 	let result = new Object();
+	result.cardmarket_error = false;
 
 	console.log('Checking price for ' + printTag);
 
@@ -16,10 +22,19 @@ exports.getCardPrice = function(printTag) {
 		result.data = new Object();
 		result.data.card = cardInfo.data;
 
-		let url = 'https://www.cardmarket.com/en/YuGiOh/Cards/' + querystring.escape(cardInfo.data.name.replace(/\s+/g, '-').replace(/:+/g, ''));
+		let removedCharacters = ':,-&\'';
+		let cardName = cardInfo.data.name;
+
+		cardName = cardName.split('.').join('');
+
+		for(let i = 0; i < removedCharacters.length; i++) {
+			cardName = cardName.replaceAll(removedCharacters.charAt(i), '');
+		}
+
+		let url = 'https://www.cardmarket.com/en/YuGiOh/Cards/' + querystring.escape(cardName.replace(/\s+/g, '-')) + '/Versions';
 
 		console.log(url);
-		response = request('GET', url + '/Versions', {
+		response = request('GET', url, {
 			headers: {
 				'user-agent': fakeUa()
 			},
@@ -36,6 +51,8 @@ exports.getCardPrice = function(printTag) {
 				
 				if(printTag.startsWith(expansion.toUpperCase())) {
 					URLs.push(url);
+				} else {
+					console.log('wrong print tag');
 				}
 			}
 
@@ -46,7 +63,9 @@ exports.getCardPrice = function(printTag) {
 			
 			let httpError = false;
 			
+			let rarity = cardInfo.data.price_data.rarity.replace(' Rare', '').toUpperCase();
 			for (let i = 0; i < URLs.length; i++) {
+				console.log('Requesting ' + URLs[i]);
 				response = request('GET', URLs[i], {
 					headers: {
 						'user-agent': fakeUa()
@@ -55,16 +74,19 @@ exports.getCardPrice = function(printTag) {
 
 				if(response.statusCode == 200) {
 					$ = cheerio.load(response.getBody('utf8'));
-
-					if($('#tabContent-info').find('.icon').first().attr('onmouseover').toUpperCase().includes(cardInfo.data.price_data.rarity.replace(' Rare', '').toUpperCase())) {
+					console.log('Checking rarity...');
+					console.log(rarity);
+					if($('#tabContent-info').find('.icon').first().attr('onmouseover').toUpperCase().includes(rarity)) {
 						let articles = $('.article-table').find('.article-row');
 						let prices = [];
-
+						
+						console.log(articles.length + ' articles found');
 						for(let j = 0; j < articles.length; j++) {
 							let condition = $(articles[j]).find('.product-attributes').first().find('a[href*="CardCondition"]').first().find('span').first().data('original-title');
 							if(allowedConditions.includes(condition)) {
 								let language = $(articles[j]).find('.product-attributes').first().find('span.icon.mr-2').first().data('original-title');
 								if(allowedLanguage.includes(language)) {
+									console.log('Extracting price...');
 									let price = parseFloat($(articles[j]).find('.mobile-offer-container').first().find('div').first().find('span').first().text().replace(/,/g, '.'));
 									console.log('Found price ' + price + ' €');
 									prices.push(price);
@@ -94,6 +116,8 @@ exports.getCardPrice = function(printTag) {
 						result.data.cardmarket.lowest_price = lowestPrice;
 						
 						return result;
+					} else {
+						console.log('Wrong rarity');
 					}
 				} else {
 					httpError = true;
@@ -102,12 +126,14 @@ exports.getCardPrice = function(printTag) {
 			console.log('0 Results found');
 			result.success = false;
 			result.error = httpError;
+			result.cardmarket_error = httpError;
 			result.message = '0 Results found'+ (httpError ? ' . HTTP error occurred' : '');
 			return result;
 		} else {
 			console.log('Failed to find cardmarket Versions');
 			result.success = false;
 			result.error = true;
+			result.cardmarket_error = true;
 			result.message = 'cardmarket.com statusCode: ' + response.statusCode;
 		}
 	} else {
